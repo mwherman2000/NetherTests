@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 15 for Windows Desktop
-VisualStudioVersion = 15.0.27004.2006
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetherTest1", "NetherTest1\NetherTest1.csproj", "{EA7D7F3D-7D00-4CEF-BEF0-DE0CEB6BF7E2}"
 EndProject
@@ -20,6 +20,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BallotWinForms1", "BallotWinForms1\BallotWinForms1.csproj", "{48A95BCA-37EF-4BC4-9F1E-5EE9BCCABF0E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventHandlerSample4", "EventHandlerSample4\EventHandlerSample4.csproj", "{0CD88E72-B36D-4A4A-8CCB-AB599E28380E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F67DDA0A-0DC8-4F35-B00A-1C883CA55826}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
