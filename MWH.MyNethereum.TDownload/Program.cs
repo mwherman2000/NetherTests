@@ -24,7 +24,13 @@ namespace MWH.MyNethereum.TDownload
                 Console.ReadLine();
                 Console.WriteLine("Cancelling Producer...");
                 ctsProducer.Cancel();
+                Console.WriteLine("Producer notified...");
+                Console.WriteLine("Waiting for Producer to exit...");
+                producer.Wait();
+                Console.WriteLine("Producer exited");
+                Console.WriteLine("Waiting for Consumer to exit...");
                 consumer.Wait();
+                Console.WriteLine("Consumer exited");
                 Console.WriteLine("Press Enter to exit...");
                 Console.ReadLine();
             }
