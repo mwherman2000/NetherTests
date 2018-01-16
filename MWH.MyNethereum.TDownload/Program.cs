@@ -10,7 +10,8 @@ namespace MWH.MyNethereum.TDownload
 {
     class Program
     {
-        static BlockingCollection<string> bc = new BlockingCollection<string>(5);
+        static BlockingCollection<string> bcTx = new BlockingCollection<string>(5);
+        static BlockingCollection<string> bcBlock = new BlockingCollection<string>(5);
 
         static void Main(string[] args)
         {
@@ -18,7 +19,8 @@ namespace MWH.MyNethereum.TDownload
             {
                 CancellationToken ctProducer = ctsProducer.Token;
                 Task producer = Task.Run(() => Producer(ctProducer), ctProducer);
-                Task consumer = Task.Run(() => Consumer());
+                Task consumerBlock = Task.Run(() => ConsumerBlock());
+                Task consumerTx = Task.Run(() => ConsumerTX());
 
                 Console.WriteLine("Waiting for Producer and Consumer...");
                 Console.ReadLine();
@@ -29,7 +31,8 @@ namespace MWH.MyNethereum.TDownload
                 producer.Wait();
                 Console.WriteLine("Producer exited");
                 Console.WriteLine("Waiting for Consumer to exit...");
-                consumer.Wait();
+                consumerBlock.Wait();
+                consumerTx.Wait();
                 Console.WriteLine("Consumer exited");
                 Console.WriteLine("Press Enter to exit...");
                 Console.ReadLine();
@@ -38,23 +41,44 @@ namespace MWH.MyNethereum.TDownload
 
         static void Producer(CancellationToken ct)
         {
-            int item = 0;
-            while(true)
+            int itemBlock = 0;
+            int itemTx = 0;
+            while (true)
             {
                 Console.WriteLine("Dowloading... (simulated)\t5 sec.");
                 Thread.Sleep(5000);
-                item += 100;
-                for (int t = 0; t < 10; t++)
+                itemBlock += 1000;
+                itemTx += 100;
+
+                bool blockAdded = false;
+                while (!blockAdded)
                 {
-                    if (bc.TryAdd(item.ToString()))
+                    if (bcBlock.TryAdd(itemBlock.ToString()))
                     {
-                        Console.WriteLine("TryAdd:\t" + item.ToString() + "\t1 sec.");
+                        blockAdded = true;
+                        Console.WriteLine("TryAdd.Block:\t" + itemBlock.ToString() + "\t1 sec.");
                         Thread.Sleep(1000);
-                        item++;
+                        itemBlock++;
                     }
                     else
                     {
-                        Console.WriteLine("TryAdd:\t" + "blocked\t3 sec.");
+                        blockAdded = false;
+                        Console.WriteLine("TryAdd.Block:\t" + "blocked\t3 sec.");
+                        Thread.Sleep(3000);
+                    }
+                }
+
+                for (int t = 0; t < 10; t++)
+                {
+                    if (bcTx.TryAdd(itemTx.ToString()))
+                    {
+                        Console.WriteLine("TryAdd.Tx:\t" + itemTx.ToString() + "\t1 sec.");
+                        Thread.Sleep(1000);
+                        itemTx++;
+                    }
+                    else
+                    {
+                        Console.WriteLine("TryAdd.Tx:\t" + "blocked\t3 sec.");
                         Thread.Sleep(3000);
                         t--;
                     }
@@ -68,16 +92,16 @@ namespace MWH.MyNethereum.TDownload
             }
         }
 
-        static void Consumer()
+        static void ConsumerBlock()
         {
             string item;
             int nTimesBlocked = 0;
-            Console.WriteLine("                              Uploading... (simulated)");
+            Console.WriteLine("                              Uploading block... (simulated)");
             while (true)
             {
-                if (bc.TryTake(out item))
+                if (bcBlock.TryTake(out item))
                 {
-                    Console.WriteLine("                              TryTake:\t" + item + "\t2 sec.");
+                    Console.WriteLine("                              TryTake.Block:\t" + item + "\t2 sec.");
                     nTimesBlocked = 0;
                     Thread.Sleep(2000);
                 }
@@ -85,10 +109,35 @@ namespace MWH.MyNethereum.TDownload
                 {
                     nTimesBlocked++;
                     if (nTimesBlocked > 4) break;
-                    Console.WriteLine("                              TryTake:\t" + "blocked\t3 sec.");
+                    Console.WriteLine("                              TryTake.Block:\t" + "blocked\t5 sec.");
+                    Thread.Sleep(5000);
+                }
+            }
+            Console.WriteLine("                              TryTake.Block: exiting");
+        }
+
+        static void ConsumerTX()
+        {
+            string item;
+            int nTimesBlocked = 0;
+            Console.WriteLine("                              Uploading tx... (simulated)");
+            while (true)
+            {
+                if (bcTx.TryTake(out item))
+                {
+                    Console.WriteLine("                              TryTake.Tx:\t" + item + "\t2 sec.");
+                    nTimesBlocked = 0;
+                    Thread.Sleep(2000);
+                }
+                else
+                {
+                    nTimesBlocked++;
+                    if (nTimesBlocked > 4) break;
+                    Console.WriteLine("                              TryTake.Tx:\t" + "blocked\t3 sec.");
                     Thread.Sleep(3000);
                 }
             }
+            Console.WriteLine("                              TryTake.Tx: exiting");
         }
     }
 }
