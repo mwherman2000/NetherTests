@@ -17,12 +17,13 @@ namespace MWH.MyNethereum.TDownload
         {
             using (CancellationTokenSource ctsProducer = new CancellationTokenSource())
             {
+                Console.WriteLine("Starting Producer and Consumers...");
                 CancellationToken ctProducer = ctsProducer.Token;
                 Task producer = Task.Run(() => Producer(ctProducer), ctProducer);
                 Task consumerBlock = Task.Run(() => ConsumerBlock());
                 Task consumerTx = Task.Run(() => ConsumerTX());
 
-                Console.WriteLine("Waiting for Producer and Consumer...");
+                Console.WriteLine("Waiting for Producer and Consumers...");
                 Console.ReadLine();
                 Console.WriteLine("Cancelling Producer...");
                 ctsProducer.Cancel();
@@ -30,10 +31,13 @@ namespace MWH.MyNethereum.TDownload
                 Console.WriteLine("Waiting for Producer to exit...");
                 producer.Wait();
                 Console.WriteLine("Producer exited");
-                Console.WriteLine("Waiting for Consumer to exit...");
+
+                Console.WriteLine("Waiting for ConsumerBlock to exit...");
                 consumerBlock.Wait();
+                Console.WriteLine("Waiting for ConsumerTx to exit...");
                 consumerTx.Wait();
-                Console.WriteLine("Consumer exited");
+                Console.WriteLine("Consumers exited");
+
                 Console.WriteLine("Press Enter to exit...");
                 Console.ReadLine();
             }
@@ -96,12 +100,12 @@ namespace MWH.MyNethereum.TDownload
         {
             string item;
             int nTimesBlocked = 0;
-            Console.WriteLine("                              Uploading block... (simulated)");
+            Console.WriteLine("                                        Uploading block... (simulated)");
             while (true)
             {
                 if (bcBlock.TryTake(out item))
                 {
-                    Console.WriteLine("                              TryTake.Block:\t" + item + "\t2 sec.");
+                    Console.WriteLine("                                        TryTake.Block:\t" + item + "\t2 sec.");
                     nTimesBlocked = 0;
                     Thread.Sleep(2000);
                 }
@@ -109,23 +113,23 @@ namespace MWH.MyNethereum.TDownload
                 {
                     nTimesBlocked++;
                     if (nTimesBlocked > 4) break;
-                    Console.WriteLine("                              TryTake.Block:\t" + "blocked\t5 sec.");
+                    Console.WriteLine("                                        TryTake.Block:\t" + "blocked\t5 sec.");
                     Thread.Sleep(5000);
                 }
             }
-            Console.WriteLine("                              TryTake.Block: exiting");
+            Console.WriteLine("                                        TryTake.Block: exiting");
         }
 
         static void ConsumerTX()
         {
             string item;
             int nTimesBlocked = 0;
-            Console.WriteLine("                              Uploading tx... (simulated)");
+            Console.WriteLine("                                        Uploading tx... (simulated)");
             while (true)
             {
                 if (bcTx.TryTake(out item))
                 {
-                    Console.WriteLine("                              TryTake.Tx:\t" + item + "\t2 sec.");
+                    Console.WriteLine("                                        TryTake.Tx:\t" + item + "\t2 sec.");
                     nTimesBlocked = 0;
                     Thread.Sleep(2000);
                 }
@@ -133,11 +137,11 @@ namespace MWH.MyNethereum.TDownload
                 {
                     nTimesBlocked++;
                     if (nTimesBlocked > 4) break;
-                    Console.WriteLine("                              TryTake.Tx:\t" + "blocked\t3 sec.");
+                    Console.WriteLine("                                        TryTake.Tx:\t" + "blocked\t3 sec.");
                     Thread.Sleep(3000);
                 }
             }
-            Console.WriteLine("                              TryTake.Tx: exiting");
+            Console.WriteLine("                                        TryTake.Tx: exiting");
         }
     }
 }
