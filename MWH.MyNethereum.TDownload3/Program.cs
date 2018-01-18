@@ -23,8 +23,8 @@ namespace MWH.MyNethereum.TDownload
 
         static void Main(string[] args)
         {
-            ulong startBlockNumber = 1000000 + 1;
-            ulong endBlockNumber = startBlockNumber + 1000000 - 1;
+            ulong startBlockNumber = 0;
+            ulong endBlockNumber = 1000000;
 
             Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
@@ -126,6 +126,7 @@ namespace MWH.MyNethereum.TDownload
                 itemBlock.BlHour = dt.Hour;
 
                 bool blockAdded = false;
+                bool txAdded = false;
                 while (!blockAdded)
                 {
                     if (bcBlock.TryAdd(itemBlock))
@@ -163,6 +164,7 @@ namespace MWH.MyNethereum.TDownload
 
                             if (bcTx.TryAdd(itemTx))
                             {
+                                txAdded = true;
                                 Console.WriteLine("TryAdd.Tx:\t" + itemTx.TransactionHash.ToString());
                                 //Thread.Sleep(1000);
 
@@ -230,18 +232,19 @@ namespace MWH.MyNethereum.TDownload
                             }
                             else
                             {
+                                if (txAdded == true) t--;
+                                txAdded = false;
                                 Console.WriteLine("TryAdd.Tx:\t" + "blocked\t1 sec.");
                                 Thread.Sleep(1000);
-                                t--;
                             }
                         }
                     }
                     else
                     {
+                        if (blockAdded) blockNumber--;
                         blockAdded = false;
                         Console.WriteLine("TryAdd.Block:\t" + "blocked\t1 sec.");
                         Thread.Sleep(1000);
-                        blockNumber--;
                     }
                 }
 
