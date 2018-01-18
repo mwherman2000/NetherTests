@@ -29,7 +29,7 @@ namespace MWH.MyNethereum.TDownload
 
                 Console.WriteLine("Waiting for Producer and Consumers...");
                 Console.ReadLine();
-                Console.WriteLine("Cancelling Producer...");
+                Console.WriteLine("canceling Producer...");
                 ctsProducer.Cancel();
                 Console.WriteLine("Producer notified...");
                 Console.WriteLine("Waiting for Producer to exit...");
@@ -102,7 +102,7 @@ namespace MWH.MyNethereum.TDownload
 
                 if (ct.IsCancellationRequested)
                 {
-                    Console.WriteLine("Producer cancelling...");
+                    Console.WriteLine("Producer canceling...");
                     break;
                 }
             }
