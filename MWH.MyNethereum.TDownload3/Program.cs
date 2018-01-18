@@ -15,20 +15,21 @@ namespace MWH.MyNethereum.TDownload
 {
     class Program
     {
-        static BlockingCollection<BlockItem> bcBlock = new BlockingCollection<BlockItem>(100);
-        static BlockingCollection<Transaction> bcTx = new BlockingCollection<Transaction>(1000);
-        static BlockingCollection<AddrItem> bcAddr = new BlockingCollection<AddrItem>(2000);
+        static BlockingCollection<BlockItem> bcBlock = new BlockingCollection<BlockItem>(1000);
+        static BlockingCollection<TxItem> bcTx = new BlockingCollection<TxItem>(5000);
+        static BlockingCollection<AddrItem> bcAddr = new BlockingCollection<AddrItem>(10000);
 
         static Dictionary<string,AddressType> contractAddrs = new Dictionary<string, AddressType>();
 
         static void Main(string[] args)
         {
-            ulong startBlockNumber = 0;
-            ulong endBlockNumber = startBlockNumber + 1000000;
+            ulong startBlockNumber = 1000000 + 1;
+            ulong endBlockNumber = startBlockNumber + 1000000 - 1;
 
             Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
 
+            DateTime dtStart = DateTime.Now;
             using (CancellationTokenSource ctsProducer = new CancellationTokenSource())
             {
                 Console.WriteLine("Starting Producer and Consumers...");
@@ -79,6 +80,13 @@ namespace MWH.MyNethereum.TDownload
                 ctsConsumerTx.Dispose();
                 ctsConsumerAddr.Dispose();
 
+                DateTime dtEnd = DateTime.Now;
+                Console.WriteLine("Start:\t" + dtStart);
+                Console.WriteLine("End:\t" + dtEnd);
+                TimeSpan ts = dtEnd - dtStart;
+                double tsMinutes = ts.TotalMinutes;
+                Console.WriteLine("Elapsed:\t" + tsMinutes.ToString() + " minutes");
+
                 Console.WriteLine("Press Enter to exit...");
                 Console.ReadLine();
             }
@@ -107,7 +115,16 @@ namespace MWH.MyNethereum.TDownload
                 {
                     itemBlock.TxCount = block.Transactions.Length;
                 }
-                
+
+                DateTime dt = Helpers.UnixTimeStampToDateTime((double)itemBlock.Timestamp.Value);
+                itemBlock.BlYear = dt.Year;
+                itemBlock.BlMonth = dt.Month;
+                itemBlock.BlWeek = dt.DayOfYear / 7;
+                itemBlock.BlDayOfYear = dt.DayOfYear;
+                itemBlock.BlDayOfMonth = dt.Day;
+                itemBlock.BlDayOfWeek = Convert.ToInt32(dt.DayOfWeek);
+                itemBlock.BlHour = dt.Hour;
+
                 bool blockAdded = false;
                 while (!blockAdded)
                 {
@@ -123,7 +140,7 @@ namespace MWH.MyNethereum.TDownload
                         {
                             var tx = blockTx[t];
 
-                            Transaction itemTx = new Transaction();
+                            TxItem itemTx = new TxItem();
                             itemTx.BlockNumber = tx.BlockNumber;
                             itemTx.TransactionIndex = tx.TransactionIndex;
                             itemTx.TransactionHash = tx.TransactionHash;
@@ -132,6 +149,17 @@ namespace MWH.MyNethereum.TDownload
                             itemTx.Value = tx.Value;
                             itemTx.Gas = tx.Gas;
                             itemTx.Input = tx.Input;
+
+                            itemTx.TxTimestamp = itemBlock.Timestamp;
+                            DateTime dtTx = Helpers.UnixTimeStampToDateTime((double)itemTx.TxTimestamp.Value);
+                            itemTx.TxYear = dtTx.Year;
+                            itemTx.TxMonth = dtTx.Month;
+                            itemTx.TxWeek = dtTx.DayOfYear / 7;
+                            itemTx.TxDayOfYear = dtTx.DayOfYear;
+                            itemTx.TxDayOfMonth = dtTx.Day;
+                            itemTx.TxDayOfWeek = Convert.ToInt32(dtTx.DayOfWeek);
+                            itemTx.TxHour = dtTx.Hour;
+
 
                             if (bcTx.TryAdd(itemTx))
                             {
@@ -150,6 +178,17 @@ namespace MWH.MyNethereum.TDownload
                                     itemAddr.TxHash = itemTx.TransactionHash;
                                     itemAddr.TxTimestamp = itemBlock.Timestamp;
                                     itemAddr.TxValue = itemTx.Value;
+
+                                    itemAddr.TxTimestamp = itemTx.TxTimestamp;
+                                    DateTime dtAddr = Helpers.UnixTimeStampToDateTime((double)itemTx.TxTimestamp.Value);
+                                    itemAddr.TxYear = dtAddr.Year;
+                                    itemAddr.TxMonth = dtAddr.Month;
+                                    itemAddr.TxWeek = dtAddr.DayOfYear / 7;
+                                    itemAddr.TxDayOfYear = dtAddr.DayOfYear;
+                                    itemAddr.TxDayOfMonth = dtAddr.Day;
+                                    itemAddr.TxDayOfWeek = Convert.ToInt32(dtAddr.DayOfWeek);
+                                    itemAddr.TxHour = dtAddr.Hour;
+
                                     while (!bcAddr.TryAdd(itemAddr))
                                     {
                                         Console.WriteLine("TryAdd.Addr.From:\t" + "blocked\t1 sec.");
@@ -170,6 +209,17 @@ namespace MWH.MyNethereum.TDownload
                                     itemAddr.TxHash = itemTx.TransactionHash;
                                     itemAddr.TxTimestamp = itemBlock.Timestamp;
                                     itemAddr.TxValue = itemTx.Value;
+
+                                    itemAddr.TxTimestamp = itemTx.TxTimestamp;
+                                    DateTime dtAddr = Helpers.UnixTimeStampToDateTime((double)itemTx.TxTimestamp.Value);
+                                    itemAddr.TxYear = dtAddr.Year;
+                                    itemAddr.TxMonth = dtAddr.Month;
+                                    itemAddr.TxWeek = dtAddr.DayOfYear / 7;
+                                    itemAddr.TxDayOfYear = dtAddr.DayOfYear;
+                                    itemAddr.TxDayOfMonth = dtAddr.Day;
+                                    itemAddr.TxDayOfWeek = Convert.ToInt32(dtAddr.DayOfWeek);
+                                    itemAddr.TxHour = dtAddr.Hour;
+
                                     while (!bcAddr.TryAdd(itemAddr))
                                     {
                                         Console.WriteLine("TryAdd.Addr.To:\t" + "blocked\t1 sec.");
@@ -222,8 +272,14 @@ namespace MWH.MyNethereum.TDownload
                                        "" + itemBlock.Timestamp.Value.ToString() + "" + "," +
                                        "\"" + itemBlock.BlockHash + "\"" + "," +
                                        //"\"" + (String.IsNullOrEmpty(itemBlock.ExtraData) ? "" : itemBlock.ExtraData.ToString()) + "\"" + "," +
-                                       "" + itemBlock.TxCount.ToString() + ""
-
+                                       "" + itemBlock.TxCount.ToString() + "" + "," +
+                                       "" + itemBlock.BlYear.ToString() + "" + "," +
+                                       "" + itemBlock.BlMonth.ToString() + "" + "," +
+                                       "" + itemBlock.BlWeek.ToString() + "" + "," +
+                                       "" + itemBlock.BlDayOfYear.ToString() + "" + "," +
+                                       "" + itemBlock.BlDayOfMonth.ToString() + "" + "," +
+                                       "" + itemBlock.BlDayOfWeek.ToString() + "" + "," +
+                                       "" + itemBlock.BlHour.ToString() + ""
                             );
                         nTimesBlocked = 0;
                         //Thread.Sleep(2000);
@@ -249,7 +305,7 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumerTXWrite(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            Transaction itemTx;
+            TxItem itemTx;
             int nTimesBlocked = 0;
             Console.WriteLine("                                        Uploading tx...");
 
@@ -266,8 +322,16 @@ namespace MWH.MyNethereum.TDownload
                                        "\"" + itemTx.From + "\"" + "," +
                                        "\"" + (String.IsNullOrEmpty(itemTx.To) ? "" : itemTx.To) + "\"" + "," +
                                        "" + itemTx.Value.Value.ToString() + "" + "," +
-                                       "" + itemTx.Gas.Value.ToString() + "" + ","
-                                       //+ "\"" + (String.IsNullOrEmpty(itemTx.Input) ? "" : Helpers.ConvertHexToASCII(itemTx.Input)) + "\""
+                                       "" + itemTx.Gas.Value.ToString() + "" + "," +
+                                       //+ "\"" + (String.IsNullOrEmpty(itemTx.Input) ? "" : Helpers.ConvertHexToASCII(itemTx.Input)) + "\"" +
+                                       "" + itemTx.TxTimestamp.ToString() + "" + "," + 
+                                       "" + itemTx.TxYear.ToString() + "" + "," +
+                                       "" + itemTx.TxMonth.ToString() + "" + "," +
+                                       "" + itemTx.TxWeek.ToString() + "" + "," +
+                                       "" + itemTx.TxDayOfYear.ToString() + "" + "," +
+                                       "" + itemTx.TxDayOfMonth.ToString() + "" + "," +
+                                       "" + itemTx.TxDayOfWeek.ToString() + "" + "," +
+                                       "" + itemTx.TxHour.ToString() + ""
                             );
                         nTimesBlocked = 0;
                         //Thread.Sleep(2000);
@@ -330,7 +394,14 @@ namespace MWH.MyNethereum.TDownload
                                        "\"" + itemAddr.EndPointType.ToString() + "\"" + "," +
                                        "\"" + itemAddr.TxHash + "\"" + "," +
                                        "" + itemAddr.TxTimestamp.Value.ToString() + "" + "," +
-                                       "" + itemAddr.TxValue.Value.ToString() + ""
+                                       "" + itemAddr.TxValue.Value.ToString() + "" + "," +
+                                       "" + itemAddr.TxYear.ToString() + "" + "," +
+                                       "" + itemAddr.TxMonth.ToString() + "" + "," +
+                                       "" + itemAddr.TxWeek.ToString() + "" + "," +
+                                       "" + itemAddr.TxDayOfYear.ToString() + "" + "," +
+                                       "" + itemAddr.TxDayOfMonth.ToString() + "" + "," +
+                                       "" + itemAddr.TxDayOfWeek.ToString() + "" + "," +
+                                       "" + itemAddr.TxHour.ToString() + ""
                             );
                         nTimesBlocked = 0;
                         //Thread.Sleep(2000);
