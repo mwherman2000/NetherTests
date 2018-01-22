@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MWH.MyNethereum.TDownload2"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MWH.MyNethereum.TDownload3", "MWH.MyNethereum.TDownload3\MWH.MyNethereum.TDownload3.csproj", "{8556D31D-5E5A-4EE0-B321-894FE9C25168}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HashSets", "HashSets\HashSets.csproj", "{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -186,6 +188,18 @@ Global
 		{8556D31D-5E5A-4EE0-B321-894FE9C25168}.Release|x64.Build.0 = Release|Any CPU
 		{8556D31D-5E5A-4EE0-B321-894FE9C25168}.Release|x86.ActiveCfg = Release|Any CPU
 		{8556D31D-5E5A-4EE0-B321-894FE9C25168}.Release|x86.Build.0 = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|x64.Build.0 = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Debug|x86.Build.0 = Debug|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|x64.ActiveCfg = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|x64.Build.0 = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|x86.ActiveCfg = Release|Any CPU
+		{E80939D0-8FEA-4F17-8632-948D2D6B5F0A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
