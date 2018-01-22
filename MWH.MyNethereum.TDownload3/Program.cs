@@ -15,90 +15,234 @@ namespace MWH.MyNethereum.TDownload
 {
     class Program
     {
+        const int ONE_MINUTE = 60 * 1000;
+        static int PauseAllTasks = 0;
+
+        static ulong startBlockNumber = 3 * 1000000 + 1;
+        static ulong endBlockNumber   = 4 * 1000000;
+
+        static double projectedMinutesPrev1 = 0;
+        static double projectedMinutesPrev2 = 0;
+        static double projectedMinutesPrev3 = 0;
+
+        static bool traceBlockedMsgs = false;
+
+        static bool traceTryAddBlock = false;
+        static bool traceTryAddTx = false;
+        static bool traceTryAddAddr = false;
+
+        static bool traceTryTakeBlock = false;
+        static bool traceTryTakeTx = false;
+        static bool traceTryTakeAddr = false;
+
+        static bool addBlock = true;
+        static bool addTx = true;
+        static bool addAddr = true;
+
+        static ulong nConsumedBlockItems = 0;
+        static ulong nConsumedTxItems = 0;
+        static ulong nConsumedAddrItems = 0;
+
         static BlockingCollection<BlockItem> bcBlock = new BlockingCollection<BlockItem>(1000);
-        static BlockingCollection<TxItem> bcTx = new BlockingCollection<TxItem>(5000);
-        static BlockingCollection<AddrItem> bcAddr = new BlockingCollection<AddrItem>(10000);
+        static BlockingCollection<TxItem> bcTx = new BlockingCollection<TxItem>(2000);
+        static BlockingCollection<AddrItem> bcAddr = new BlockingCollection<AddrItem>(4000);
 
         static Dictionary<string,AddressType> contractAddrs = new Dictionary<string, AddressType>();
 
         static void Main(string[] args)
         {
-            ulong startBlockNumber = 0;
-            ulong endBlockNumber = 1000000;
-
             Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
 
             DateTime dtStart = DateTime.Now;
-            using (CancellationTokenSource ctsProducer = new CancellationTokenSource())
+            Console.WriteLine("Starting ProduceItems and Consumers...");
+
+            CancellationTokenSource ctsProduceItems = new CancellationTokenSource();
+            CancellationTokenSource ctsConsumeBlocks = new CancellationTokenSource();
+            CancellationTokenSource ctsConsumeTxs = new CancellationTokenSource();
+            CancellationTokenSource ctsConsumeAddrs = new CancellationTokenSource();
+
+            CancellationToken ctProduceItems = ctsProduceItems.Token;
+            CancellationToken ctConsumeBlocks = ctsConsumeBlocks.Token;
+            CancellationToken ctConsumeTxs = ctsConsumeTxs.Token;
+            CancellationToken ctConsumeAddrs = ctsConsumeAddrs.Token;
+
+            Task produceItems = Task.Run(() => ProduceItems(web3, startBlockNumber, endBlockNumber, ctProduceItems), ctProduceItems);
+            Task consumeBlocks = Task.Run(() => ConsumeBlocks(web3, startBlockNumber, endBlockNumber, ctConsumeBlocks), ctConsumeBlocks);
+            Task consumeTxs = Task.Run(() => ConsumeTxs(web3, startBlockNumber, endBlockNumber, ctConsumeTxs), ctConsumeTxs);
+            Task consumeAddrs = Task.Run(() => ConsumeAddr(web3, startBlockNumber, endBlockNumber, ctConsumeAddrs), ctConsumeAddrs);
+
+            Console.WriteLine("Waiting for ProduceItems and Consumers...");
+            while (!produceItems.IsCompleted) // Monitoring loop
             {
-                Console.WriteLine("Starting Producer and Consumers...");
-                CancellationTokenSource ctsConsumerBlock = new CancellationTokenSource();
-                CancellationTokenSource ctsConsumerTx = new CancellationTokenSource();
-                CancellationTokenSource ctsConsumerAddr = new CancellationTokenSource();
-
-                CancellationToken ctProducer = ctsProducer.Token;
-                CancellationToken ctConsumerBlock = ctsConsumerBlock.Token;
-                CancellationToken ctConsumerTx = ctsConsumerTx.Token;
-                CancellationToken ctConsumerAddr = ctsConsumerAddr.Token;
-
-                Task producer = Task.Run(() => Producer(web3, startBlockNumber, endBlockNumber, ctProducer), ctProducer);
-                Task consumerBlock = Task.Run(() => ConsumerBlockWrite(web3, startBlockNumber, endBlockNumber, ctConsumerBlock), ctConsumerBlock);
-                Task consumerTx = Task.Run(() => ConsumerTXWrite(web3, startBlockNumber, endBlockNumber, ctConsumerTx), ctConsumerTx);
-                Task consumerAddr = Task.Run(() => ConsumerAddrWrite(web3, startBlockNumber, endBlockNumber, ctConsumerAddr), ctConsumerAddr);
-
-                Console.WriteLine("Waiting for Producer and Consumers...");
-                while (!producer.IsCompleted)
+                Console.WriteLine("-------------------------------------------------------");
+                Console.WriteLine("nConsumedBlockItems:\t" + nConsumedBlockItems.ToString());
+                Console.WriteLine("nConsumedTxItems:   \t" + nConsumedTxItems.ToString());
+                Console.WriteLine("nConsumedAddrItems: \t" + nConsumedAddrItems.ToString());
+                Console.WriteLine("-------------------------------------------------------");
+                Console.WriteLine("bcBlock.Count:\t" + bcBlock.Count.ToString());
+                Console.WriteLine("bcTx.Count:   \t" + bcTx.Count.ToString());
+                Console.WriteLine("bcAddr.Count: \t" + bcAddr.Count.ToString());
+                Console.WriteLine("contractAddrs.Count:\t" + contractAddrs.Count.ToString());
+                Console.WriteLine("-------------------------------------------------------");
+                DateTime dtInterim = DateTime.Now;
+                Console.WriteLine("Start:  \t" + dtStart.ToString());
+                Console.WriteLine("Interim:\t" + dtInterim.ToString());
+                TimeSpan tsConsumedItems = dtInterim - dtStart;
+                double tsConsumedItemsMinutes = tsConsumedItems.TotalMinutes;
+                Console.WriteLine("Elapsed:\t" + ((ulong)tsConsumedItemsMinutes).ToString() + " minutes");
+                if (tsConsumedItemsMinutes >= 1.0 && nConsumedBlockItems >= 1)
                 {
-                    Console.WriteLine("Press Enter to cancel Producer...");
-                    if (Console.KeyAvailable)
+                    double nConsumedItemsPerMinute = nConsumedBlockItems / tsConsumedItemsMinutes;
+                    Console.WriteLine("Rate:    \t" + ((int)nConsumedItemsPerMinute).ToString() + " per minute");
+                    ulong nBlocksRemaining = (endBlockNumber - startBlockNumber + 1) - nConsumedBlockItems;
+                    double projectedMinutesCurrent = (double)nBlocksRemaining / nConsumedItemsPerMinute;
+                    projectedMinutesPrev3 = projectedMinutesPrev2;
+                    projectedMinutesPrev2 = projectedMinutesPrev1;
+                    projectedMinutesPrev1 = projectedMinutesCurrent;
+                    if (projectedMinutesPrev3 > 0)
                     {
-                        Console.ReadKey();
-                        Console.WriteLine("Canceling Producer...");
-                        ctsProducer.Cancel();
-                        Console.WriteLine("Producer notified...");
+                        double projectedMinutesAverage = (projectedMinutesPrev3 + projectedMinutesPrev2 + projectedMinutesPrev1) / 3.0;
+                        DateTime dtProjected = dtStart.AddMinutes(projectedMinutesAverage);
+                        Console.WriteLine("Projected:\t" + ((ulong)projectedMinutesCurrent).ToString() + " minutes"
+                            + " (" + (int)(tsConsumedItemsMinutes / (tsConsumedItemsMinutes + projectedMinutesCurrent)) + "%)");
+                        Console.WriteLine("Projected:\t" + dtProjected.ToString());
                     }
-                    Thread.Sleep(10000);
                 }
-                Console.WriteLine("Waiting for Producer to exit...");
-                producer.Wait();
-                Console.WriteLine("Producer exited");
 
-                ctsConsumerBlock.Cancel();
-                ctsConsumerTx.Cancel();
-                ctsConsumerAddr.Cancel();
-
-                Console.WriteLine("Waiting for ConsumerBlock to exit...");
-                consumerBlock.Wait();
-                Console.WriteLine("Waiting for ConsumerTx to exit...");
-                consumerTx.Wait();
-                Console.WriteLine("Waiting for ConsumerAddr to exit...");
-                consumerAddr.Wait();
-                Console.WriteLine("Consumers exited");
-
-                ctsConsumerBlock.Dispose();
-                ctsConsumerTx.Dispose();
-                ctsConsumerAddr.Dispose();
-
-                DateTime dtEnd = DateTime.Now;
-                Console.WriteLine("Start:\t" + dtStart);
-                Console.WriteLine("End:\t" + dtEnd);
-                TimeSpan ts = dtEnd - dtStart;
-                double tsMinutes = ts.TotalMinutes;
-                Console.WriteLine("Elapsed:\t" + tsMinutes.ToString() + " minutes");
-
-                Console.WriteLine("Press Enter to exit...");
-                Console.ReadLine();
+                Console.WriteLine("Press Enter to cancel ProduceItems (X).................");
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey();
+                    switch(key.KeyChar)
+                    { 
+                        case 'a': // Addr off
+                            {
+                                traceTryAddAddr = false;
+                                traceTryTakeAddr = false;
+                                break;
+                            }
+                        case 'A': // Addr on
+                            {
+                                traceTryAddAddr = true;
+                                traceTryTakeAddr = true;
+                                break;
+                            }
+                        case 'b': // Blocks off
+                            {
+                                traceTryAddBlock = false;
+                                traceTryTakeBlock = false;
+                                break;
+                            }
+                        case 'B': // Blocks on
+                            {
+                                traceTryAddBlock = true;
+                                traceTryTakeBlock = true;
+                                break;
+                            }
+                        case 'd': // Blocked messages off
+                            {
+                                traceBlockedMsgs = false;
+                                break;
+                            }
+                        case 'D': // Blocked messages on
+                            {
+                                traceBlockedMsgs = true;
+                                break;
+                            }
+                        case 'p': // Pulse off
+                            {
+                                traceTryAddBlock = false;
+                                traceTryTakeBlock = false;
+                                break;
+                            }
+                        case 'P': // Pulse on
+                            {
+                                traceTryAddBlock = true;
+                                traceTryTakeBlock = true;
+                                break;
+                            }
+                        case 't': // Tx off
+                            {
+                                traceTryAddTx = false;
+                                traceTryTakeTx = false;
+                                break;
+                            }
+                        case 'T': // Tx on
+                            {
+                                traceTryAddTx = true;
+                                traceTryTakeTx = true;
+                                break;
+                            }
+                        case 'X': // Exit
+                            {
+                                Console.WriteLine("Canceling ProduceItems...");
+                                ctsProduceItems.Cancel();
+                                Console.WriteLine("ProduceItems notified...");
+                                break;
+                            }
+                        case 'W': // Wait
+                            {
+                                PauseAllTasks = 4;
+                                Console.WriteLine("Waiting...");
+                                Thread.Sleep((int)(ONE_MINUTE));
+                                PauseAllTasks = 0;
+                                break;
+                            }
+                        default: 
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine("Enter X to confirm exit");
+                                break;
+                            }
+                    }
+                }
+                Thread.Sleep(10000);
             }
+            Console.WriteLine("Waiting for ProduceItems to exit...");
+            produceItems.Wait();
+            Console.WriteLine("ProduceItems exited");
+
+            ctsConsumeBlocks.Cancel();
+            ctsConsumeTxs.Cancel();
+            ctsConsumeAddrs.Cancel();
+
+            Console.WriteLine("Waiting for ConsumeBlocks to exit...");
+            consumeBlocks.Wait();
+            Console.WriteLine("Waiting for ConsumeTxs to exit...");
+            consumeTxs.Wait();
+            Console.WriteLine("Waiting for ConsumeAddrs to exit...");
+            consumeAddrs.Wait();
+            Console.WriteLine("Consumers exited");
+
+            ctsProduceItems.Dispose();
+            ctsConsumeBlocks.Dispose();
+            ctsConsumeTxs.Dispose();
+            ctsConsumeAddrs.Dispose();
+
+            DateTime dtEnd = DateTime.Now;
+            Console.WriteLine("Start:\t" + dtStart.ToString());
+            Console.WriteLine("End:\t" + dtEnd.ToString());
+            TimeSpan ts = dtEnd - dtStart;
+            double tsMinutes = ts.TotalMinutes;
+            Console.WriteLine("Elapsed:\t" + tsMinutes.ToString() + " minutes");
+
+            Console.WriteLine("Press Enter to exit...");
+            Console.ReadLine();
         }
 
-        static void Producer(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ProduceItems(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
             SHA256 SHA256Gen = SHA256Managed.Create();
 
             for (ulong blockNumber = startBlockNumber; blockNumber <= endBlockNumber; blockNumber++ ) // BLOCKS
             {
-                //Console.WriteLine("Dowloading...");
+                if (PauseAllTasks > 0)
+                {
+                    PauseAllTasks--;
+                    Console.WriteLine("ProduceAllItems.Blocks:\tWaiting...");
+                    Thread.Sleep(ONE_MINUTE);
+                }
 
                 var taskGetBlockWithTx = GetBlockWithTx(web3, blockNumber);
                 taskGetBlockWithTx.Wait();
@@ -131,14 +275,27 @@ namespace MWH.MyNethereum.TDownload
                 {
                     if (bcBlock.TryAdd(itemBlock))
                     {
+                        if (!addBlock)
+                        {
+                            BlockItem itemBlockDummy = new BlockItem();
+                            bcBlock.TryTake(out itemBlockDummy);
+                        }
+
                         blockAdded = true;
-                        Console.WriteLine("TryAdd.Block:\t" + itemBlock.Number.Value.ToString());
+                        if (traceTryAddBlock) Console.WriteLine("TryAdd.Block:\t" + itemBlock.Number.Value.ToString());
                         //Thread.Sleep(1000);
 
                         var blockTx = block.Transactions;
                         int txCount = blockTx.Length;
                         for (int t = 0; t < txCount; t++) // TX
                         {
+                            if (PauseAllTasks > 0)
+                            {
+                                PauseAllTasks--;
+                                Console.WriteLine("ProduceAllItems.Txs:\tWaiting...");
+                                Thread.Sleep(ONE_MINUTE);
+                            }
+
                             var tx = blockTx[t];
 
                             TxItem itemTx = new TxItem();
@@ -164,8 +321,14 @@ namespace MWH.MyNethereum.TDownload
 
                             if (bcTx.TryAdd(itemTx))
                             {
+                                if (!addTx)
+                                {
+                                    TxItem itemTxDummy = new TxItem();
+                                    bcTx.TryTake(out itemTxDummy);
+                                }
+
                                 txAdded = true;
-                                Console.WriteLine("TryAdd.Tx:\t" + itemTx.TransactionHash.ToString());
+                                if (traceTryAddTx) Console.WriteLine("TryAdd.Tx:\t" + itemTx.TransactionHash.ToString());
                                 //Thread.Sleep(1000);
 
                                 if (!String.IsNullOrEmpty(tx.From))
@@ -193,10 +356,23 @@ namespace MWH.MyNethereum.TDownload
 
                                     while (!bcAddr.TryAdd(itemAddr))
                                     {
-                                        Console.WriteLine("TryAdd.Addr.From:\t" + "blocked\t1 sec.");
+                                        if (PauseAllTasks > 0)
+                                        {
+                                            PauseAllTasks--;
+                                            Console.WriteLine("ProduceAllItems.Addr.From:\tWaiting...");
+                                            Thread.Sleep(ONE_MINUTE);
+                                        }
+
+                                        //Console.Beep();
+                                        if (traceBlockedMsgs) Console.WriteLine("TryAdd.Addr.From:\t" + " Blocked\t1 sec.");
                                         Thread.Sleep(1000);
                                     }
-                                    Console.WriteLine("TryAdd.Addr.From:\t" + itemAddr.Address);
+                                    if (!addAddr)
+                                    {
+                                        AddrItem itemAddrDummy = new AddrItem();
+                                        bcAddr.TryTake(out itemAddrDummy);
+                                    }
+                                    if (traceTryAddAddr) Console.WriteLine("TryAdd.Addr.From:\t" + itemAddr.Address);
                                 }
 
                                 if (!String.IsNullOrEmpty(tx.To))
@@ -224,17 +400,31 @@ namespace MWH.MyNethereum.TDownload
 
                                     while (!bcAddr.TryAdd(itemAddr))
                                     {
-                                        Console.WriteLine("TryAdd.Addr.To:\t" + "blocked\t1 sec.");
+                                        if (PauseAllTasks > 0)
+                                        {
+                                            PauseAllTasks--;
+                                            Console.WriteLine("ProduceAllItems.Addr.To:\tWaiting...");
+                                            Thread.Sleep(ONE_MINUTE);
+                                        }
+
+                                        //Console.Beep();
+                                        if (traceBlockedMsgs) Console.WriteLine("TryAdd.Addr.To:\t" + " Blocked\t1 sec.");
                                         Thread.Sleep(1000);
                                     }
-                                    Console.WriteLine("TryAdd.Addr.To:\t" + itemAddr.Address);
+                                    if (!addAddr)
+                                    {
+                                        AddrItem itemAddrDummy = new AddrItem();
+                                        bcAddr.TryTake(out itemAddrDummy);
+                                    }
+                                    if (traceTryAddAddr) Console.WriteLine("TryAdd.Addr.To:\t" + itemAddr.Address);
                                 }
                             }
                             else
                             {
+                                //Console.Beep();
                                 if (txAdded == true) t--;
                                 txAdded = false;
-                                Console.WriteLine("TryAdd.Tx:\t" + "blocked\t1 sec.");
+                                if (traceBlockedMsgs) Console.WriteLine("TryAdd.Tx:\t" + " Blocked\t1 sec.");
                                 Thread.Sleep(1000);
                             }
                         }
@@ -243,14 +433,14 @@ namespace MWH.MyNethereum.TDownload
                     {
                         if (blockAdded) blockNumber--;
                         blockAdded = false;
-                        Console.WriteLine("TryAdd.Block:\t" + "blocked\t1 sec.");
+                        if (traceBlockedMsgs) Console.WriteLine("TryAdd.Block:\t" + " Blocked\t1 sec.");
                         Thread.Sleep(1000);
                     }
                 }
 
                 if (ct.IsCancellationRequested)
                 {
-                    Console.WriteLine("Producer canceling...");
+                    Console.WriteLine("ProduceItems:\tCanceling...");
                     break;
                 }
             }
@@ -258,19 +448,26 @@ namespace MWH.MyNethereum.TDownload
 
         const string FILENAME_BLOCKS = @"c:\temp\a-blocks-{0}-{1}.csv";
 
-        static void ConsumerBlockWrite(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeBlocks(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
             BlockItem itemBlock;
             int nTimesBlocked = 0;
-            Console.WriteLine("                                        Uploading block...");
 
             string filename = String.Format(FILENAME_BLOCKS, startBlockNumber, endBlockNumber);
             using (StreamWriter file = new StreamWriter(filename))
-                while (true)
+                while (addBlock)
                 {
+                    if (PauseAllTasks > 0)
+                    {
+                        PauseAllTasks--;
+                        Console.WriteLine("ConsumeBlocks:\tWaiting...");
+                        Thread.Sleep(ONE_MINUTE);
+                    }
+
                     if (bcBlock.TryTake(out itemBlock))
                     {
-                        Console.WriteLine("                                        TryTake.Block:\t" + itemBlock.Number.Value.ToString());
+                        if (traceTryTakeBlock) Console.WriteLine("                                        TryTake.Block:\t" + itemBlock.Number.Value.ToString());
+                        nConsumedBlockItems++;
                         file.WriteLine("" + itemBlock.Number.Value.ToString() + "" + "," +
                                        "" + itemBlock.Timestamp.Value.ToString() + "" + "," +
                                        "\"" + itemBlock.BlockHash + "\"" + "," +
@@ -291,34 +488,41 @@ namespace MWH.MyNethereum.TDownload
                     {
                         nTimesBlocked++;
                         //if (nTimesBlocked > 10) break;
-                        Console.WriteLine("                                        TryTake.Block:\t" + "blocked\t1 sec.");
+                        if (traceBlockedMsgs) Console.WriteLine("                                        TryTake.Block:\t" + " Blocked\t1 sec.");
                         Thread.Sleep(1000);
                     }
 
                     if (ct.IsCancellationRequested)
                     {
-                        Console.WriteLine("ConsumerBlockWrite canceling...");
+                        Console.WriteLine("ConsumeBlocks:\tCanceling...");
                         break;
                     }
                 }
-            Console.WriteLine("                                        TryTake.Block: exiting");
+            Console.WriteLine("                                        TryTake.Block:\tExiting");
         }
 
         const string FILENAME_TX = @"c:\temp\a-tx-{0}-{1}.csv";
 
-        static void ConsumerTXWrite(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeTxs(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
             TxItem itemTx;
             int nTimesBlocked = 0;
-            Console.WriteLine("                                        Uploading tx...");
 
             string filename = String.Format(FILENAME_TX, startBlockNumber, endBlockNumber);
             using (StreamWriter file = new StreamWriter(filename))
-                while (true)
+                while (addTx)
                 {
+                    if (PauseAllTasks > 0)
+                    {
+                        PauseAllTasks--;
+                        Console.WriteLine("ConsumeTxss:\tWaiting...");
+                        Thread.Sleep(ONE_MINUTE);
+                    }
+
                     if (bcTx.TryTake(out itemTx))
                     {
-                        Console.WriteLine("                                        TryTake.Tx:\t" + itemTx.TransactionHash);
+                        if (traceTryTakeTx) Console.WriteLine("                                        TryTake.Tx:\t" + itemTx.TransactionHash);
+                        nConsumedTxItems++;
                         file.WriteLine("" + itemTx.BlockNumber.Value.ToString() + "" + "," +
                                        "" + itemTx.TransactionIndex.Value.ToString() + "" + "," +
                                        "\"" + itemTx.TransactionHash + "\"" + "," +
@@ -327,7 +531,7 @@ namespace MWH.MyNethereum.TDownload
                                        "" + itemTx.Value.Value.ToString() + "" + "," +
                                        "" + itemTx.Gas.Value.ToString() + "" + "," +
                                        //+ "\"" + (String.IsNullOrEmpty(itemTx.Input) ? "" : Helpers.ConvertHexToASCII(itemTx.Input)) + "\"" +
-                                       "" + itemTx.TxTimestamp.ToString() + "" + "," + 
+                                       "" + itemTx.TxTimestamp.Value.ToString() + "" + "," + 
                                        "" + itemTx.TxYear.ToString() + "" + "," +
                                        "" + itemTx.TxMonth.ToString() + "" + "," +
                                        "" + itemTx.TxWeek.ToString() + "" + "," +
@@ -343,32 +547,38 @@ namespace MWH.MyNethereum.TDownload
                     {
                         nTimesBlocked++;
                         //if (nTimesBlocked > 10) break;
-                        Console.WriteLine("                                        TryTake.Tx:\t" + "blocked\t1 sec.");
+                        if (traceBlockedMsgs) Console.WriteLine("                                        TryTake.Tx:\t" + " Blocked\t1 sec.");
                         Thread.Sleep(1000);
                     }
 
                     if (ct.IsCancellationRequested)
                     {
-                        Console.WriteLine("ConsumerTxWrite canceling...");
+                        Console.WriteLine("ConsumeTxs:\tCanceling...");
                         break;
                     }
                 }
-            Console.WriteLine("                                        TryTake.Tx: exiting");
+            Console.WriteLine("                                        TryTake.Tx:\tExiting");
         }
 
 
         const string FILENAME_ADDR = @"c:\temp\a-addr-{0}-{1}.csv";
 
-        static void ConsumerAddrWrite(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeAddr(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
             AddrItem itemAddr;
             int nTimesBlocked = 0;
-            Console.WriteLine("                                        Uploading addr...");
 
             string filename = String.Format(FILENAME_ADDR, startBlockNumber, endBlockNumber);
             using (StreamWriter file = new StreamWriter(filename))
-                while (true)
+                while (addAddr)
                 {
+                    if (PauseAllTasks > 0)
+                    {
+                        PauseAllTasks--;
+                        Console.WriteLine("ConsumeAddr:\tWaiting...");
+                        Thread.Sleep(ONE_MINUTE);
+                    }
+
                     if (bcAddr.TryTake(out itemAddr))
                     {
                         AddressType addrType;
@@ -387,10 +597,10 @@ namespace MWH.MyNethereum.TDownload
                             itemAddr.AddrType = addrType;
 
                             contractAddrs.Add(itemAddr.Address, itemAddr.AddrType);
-                            Console.WriteLine("contractAddrs.Count:\t" + contractAddrs.Count.ToString());
                         }
 
-                        Console.WriteLine("                                        TryTake.Addr:\t" + itemAddr.Address);
+                        if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.Addr:\t" + itemAddr.Address);
+                        nConsumedAddrItems++;
                         file.WriteLine("\"" + itemAddr.Address + "\"" + "," +
                                        "\"" + itemAddr.AddrType.ToString() + "\"" + "," +
                                        "" + itemAddr.BlockNumber.Value.ToString() + "" + "," +
@@ -413,17 +623,17 @@ namespace MWH.MyNethereum.TDownload
                     {
                         nTimesBlocked++;
                         //if (nTimesBlocked > 10) break;
-                        Console.WriteLine("                                        TryTake.Addr:\t" + "blocked\t1 sec.");
-                        Thread.Sleep(1000);
+                        if (traceBlockedMsgs) Console.WriteLine("                                        TryTake.Addr:\t" + " Blocked\t0.1 sec.");
+                        Thread.Sleep(100);
                     }
 
                     if (ct.IsCancellationRequested)
                     {
-                        Console.WriteLine("ConsumerAddrWrite canceling...");
+                        Console.WriteLine("ConsumeAddr:\tCanceling...");
                         break;
                     }
                 }
-            Console.WriteLine("                                        TryTake.Addr: exiting");
+            Console.WriteLine("                                        TryTake.Addr:\tExiting");
         }
 
         private readonly static char[] digits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
