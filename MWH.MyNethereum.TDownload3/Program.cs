@@ -51,182 +51,189 @@ namespace MWH.MyNethereum.TDownload
 
         static void Main(string[] args)
         {
-            Web3 web3 = new Web3();
-            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-
-            DateTime dtStart = DateTime.Now;
-            Console.WriteLine("Starting ProduceItems and Consumers...");
-
-            CancellationTokenSource ctsProduceItems = new CancellationTokenSource();
-            CancellationTokenSource ctsConsumeBlocks = new CancellationTokenSource();
-            CancellationTokenSource ctsConsumeTxs = new CancellationTokenSource();
-            CancellationTokenSource ctsConsumeAddrs = new CancellationTokenSource();
-
-            CancellationToken ctProduceItems = ctsProduceItems.Token;
-            CancellationToken ctConsumeBlocks = ctsConsumeBlocks.Token;
-            CancellationToken ctConsumeTxs = ctsConsumeTxs.Token;
-            CancellationToken ctConsumeAddrs = ctsConsumeAddrs.Token;
-
-            Task produceItems = Task.Run(() => ProduceItems(web3, startBlockNumber, endBlockNumber, ctProduceItems), ctProduceItems);
-            Task consumeBlocks = Task.Run(() => ConsumeBlocks(web3, startBlockNumber, endBlockNumber, ctConsumeBlocks), ctConsumeBlocks);
-            Task consumeTxs = Task.Run(() => ConsumeTxs(web3, startBlockNumber, endBlockNumber, ctConsumeTxs), ctConsumeTxs);
-            Task consumeAddrs = Task.Run(() => ConsumeAddr(web3, startBlockNumber, endBlockNumber, ctConsumeAddrs), ctConsumeAddrs);
-
-            Console.WriteLine("Waiting for ProduceItems and Consumers...");
-            while (!produceItems.IsCompleted) // Monitoring loop
+            try
             {
-                Console.WriteLine("-------------------------------------------------------");
-                Console.WriteLine("nConsumedBlockItems:\t" + nConsumedBlockItems.ToString());
-                Console.WriteLine("nConsumedTxItems:   \t" + nConsumedTxItems.ToString());
-                Console.WriteLine("nConsumedAddrItems: \t" + nConsumedAddrItems.ToString());
-                Console.WriteLine("-------------------------------------------------------");
-                Console.WriteLine("bcBlock.Count:\t" + bcBlock.Count.ToString());
-                Console.WriteLine("bcTx.Count:   \t" + bcTx.Count.ToString());
-                Console.WriteLine("bcAddr.Count: \t" + bcAddr.Count.ToString());
-                Console.WriteLine("contractAddrs.Count:\t" + contractAddrs.Count.ToString());
-                Console.WriteLine("-------------------------------------------------------");
-                DateTime dtInterim = DateTime.Now;
-                Console.WriteLine("Start:  \t" + dtStart.ToString());
-                Console.WriteLine("Interim:\t" + dtInterim.ToString());
-                TimeSpan tsConsumedItems = dtInterim - dtStart;
-                double tsConsumedItemsMinutes = tsConsumedItems.TotalMinutes;
-                Console.WriteLine("Elapsed:\t" + ((ulong)tsConsumedItemsMinutes).ToString() + " minutes");
-                if (tsConsumedItemsMinutes >= 1.0 && nConsumedBlockItems >= 1)
+                Web3 web3 = new Web3();
+                //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+
+                DateTime dtStart = DateTime.Now;
+                Console.WriteLine("Starting ProduceItems and Consumers...");
+
+                CancellationTokenSource ctsProduceItems = new CancellationTokenSource();
+                CancellationTokenSource ctsConsumeBlocks = new CancellationTokenSource();
+                CancellationTokenSource ctsConsumeTxs = new CancellationTokenSource();
+                CancellationTokenSource ctsConsumeAddrs = new CancellationTokenSource();
+
+                CancellationToken ctProduceItems = ctsProduceItems.Token;
+                CancellationToken ctConsumeBlocks = ctsConsumeBlocks.Token;
+                CancellationToken ctConsumeTxs = ctsConsumeTxs.Token;
+                CancellationToken ctConsumeAddrs = ctsConsumeAddrs.Token;
+
+                Task produceItems = Task.Run(() => ProduceItems(web3, startBlockNumber, endBlockNumber, ctProduceItems), ctProduceItems);
+                Task consumeBlocks = Task.Run(() => ConsumeBlocks(web3, startBlockNumber, endBlockNumber, ctConsumeBlocks), ctConsumeBlocks);
+                Task consumeTxs = Task.Run(() => ConsumeTxs(web3, startBlockNumber, endBlockNumber, ctConsumeTxs), ctConsumeTxs);
+                Task consumeAddrs = Task.Run(() => ConsumeAddr(web3, startBlockNumber, endBlockNumber, ctConsumeAddrs), ctConsumeAddrs);
+
+                Console.WriteLine("Waiting for ProduceItems and Consumers...");
+                while (!produceItems.IsCompleted) // Monitoring loop
                 {
-                    double nConsumedItemsPerMinute = nConsumedBlockItems / tsConsumedItemsMinutes;
-                    Console.WriteLine("Rate:    \t" + ((int)nConsumedItemsPerMinute).ToString() + " per minute");
-                    ulong nBlocksRemaining = (endBlockNumber - startBlockNumber + 1) - nConsumedBlockItems;
-                    double projectedMinutesCurrent = (double)nBlocksRemaining / nConsumedItemsPerMinute;
-                    projectedMinutesPrev3 = projectedMinutesPrev2;
-                    projectedMinutesPrev2 = projectedMinutesPrev1;
-                    projectedMinutesPrev1 = projectedMinutesCurrent;
-                    if (projectedMinutesPrev3 > 0)
+                    Console.WriteLine("-------------------------------------------------------");
+                    Console.WriteLine("nConsumedBlockItems:\t" + nConsumedBlockItems.ToString());
+                    Console.WriteLine("nConsumedTxItems:   \t" + nConsumedTxItems.ToString());
+                    Console.WriteLine("nConsumedAddrItems: \t" + nConsumedAddrItems.ToString());
+                    Console.WriteLine("-------------------------------------------------------");
+                    Console.WriteLine("bcBlock.Count:\t" + bcBlock.Count.ToString());
+                    Console.WriteLine("bcTx.Count:   \t" + bcTx.Count.ToString());
+                    Console.WriteLine("bcAddr.Count: \t" + bcAddr.Count.ToString());
+                    Console.WriteLine("contractAddrs.Count:\t" + contractAddrs.Count.ToString());
+                    Console.WriteLine("-------------------------------------------------------");
+                    DateTime dtInterim = DateTime.Now;
+                    Console.WriteLine("Start:  \t" + dtStart.ToString());
+                    Console.WriteLine("Interim:\t" + dtInterim.ToString());
+                    TimeSpan tsConsumedItems = dtInterim - dtStart;
+                    double tsConsumedItemsMinutes = tsConsumedItems.TotalMinutes;
+                    Console.WriteLine("Elapsed:\t" + ((ulong)tsConsumedItemsMinutes).ToString() + " minutes");
+                    if (tsConsumedItemsMinutes >= 1.0 && nConsumedBlockItems >= 1)
                     {
-                        double projectedMinutesAverage = (projectedMinutesPrev3 + projectedMinutesPrev2 + projectedMinutesPrev1) / 3.0;
-                        DateTime dtProjected = dtStart.AddMinutes(projectedMinutesAverage);
-                        Console.WriteLine("Projected:\t" + ((ulong)projectedMinutesCurrent).ToString() + " minutes"
-                            + " (" + (int)(tsConsumedItemsMinutes / (tsConsumedItemsMinutes + projectedMinutesCurrent)) + "%)");
-                        Console.WriteLine("Projected:\t" + dtProjected.ToString());
+                        double nConsumedItemsPerMinute = nConsumedBlockItems / tsConsumedItemsMinutes;
+                        Console.WriteLine("Rate:    \t" + ((int)nConsumedItemsPerMinute).ToString() + " per minute");
+                        ulong nBlocksRemaining = (endBlockNumber - startBlockNumber + 1) - nConsumedBlockItems;
+                        double projectedMinutesCurrent = (double)nBlocksRemaining / nConsumedItemsPerMinute;
+                        projectedMinutesPrev3 = projectedMinutesPrev2;
+                        projectedMinutesPrev2 = projectedMinutesPrev1;
+                        projectedMinutesPrev1 = projectedMinutesCurrent;
+                        if (projectedMinutesPrev3 > 0)
+                        {
+                            double projectedMinutesAverage = (projectedMinutesPrev3 + projectedMinutesPrev2 + projectedMinutesPrev1) / 3.0;
+                            DateTime dtProjected = dtStart.AddMinutes(projectedMinutesAverage);
+                            Console.WriteLine("Projected:\t" + ((ulong)projectedMinutesCurrent).ToString() + " minutes"
+                                + " (" + (int)(100.0 * tsConsumedItemsMinutes / (tsConsumedItemsMinutes + projectedMinutesCurrent)) + "%)");
+                            Console.WriteLine("Projected:\t" + dtProjected.ToString());
+                        }
                     }
-                }
 
-                Console.WriteLine("Press Enter to cancel ProduceItems (X).................");
-                if (Console.KeyAvailable)
-                {
-                    var key = Console.ReadKey();
-                    switch(key.KeyChar)
-                    { 
-                        case 'a': // Addr off
-                            {
-                                traceTryAddAddr = false;
-                                traceTryTakeAddr = false;
-                                break;
-                            }
-                        case 'A': // Addr on
-                            {
-                                traceTryAddAddr = true;
-                                traceTryTakeAddr = true;
-                                break;
-                            }
-                        case 'b': // Blocks off
-                            {
-                                traceTryAddBlock = false;
-                                traceTryTakeBlock = false;
-                                break;
-                            }
-                        case 'B': // Blocks on
-                            {
-                                traceTryAddBlock = true;
-                                traceTryTakeBlock = true;
-                                break;
-                            }
-                        case 'd': // Blocked messages off
-                            {
-                                traceBlockedMsgs = false;
-                                break;
-                            }
-                        case 'D': // Blocked messages on
-                            {
-                                traceBlockedMsgs = true;
-                                break;
-                            }
-                        case 'p': // Pulse off
-                            {
-                                traceTryAddBlock = false;
-                                traceTryTakeBlock = false;
-                                break;
-                            }
-                        case 'P': // Pulse on
-                            {
-                                traceTryAddBlock = true;
-                                traceTryTakeBlock = true;
-                                break;
-                            }
-                        case 't': // Tx off
-                            {
-                                traceTryAddTx = false;
-                                traceTryTakeTx = false;
-                                break;
-                            }
-                        case 'T': // Tx on
-                            {
-                                traceTryAddTx = true;
-                                traceTryTakeTx = true;
-                                break;
-                            }
-                        case 'X': // Exit
-                            {
-                                Console.WriteLine("Canceling ProduceItems...");
-                                ctsProduceItems.Cancel();
-                                Console.WriteLine("ProduceItems notified...");
-                                break;
-                            }
-                        case 'W': // Wait
-                            {
-                                PauseAllTasks = 4;
-                                Console.WriteLine("Waiting...");
-                                Thread.Sleep((int)(ONE_MINUTE));
-                                PauseAllTasks = 0;
-                                break;
-                            }
-                        default: 
-                            {
-                                Console.WriteLine();
-                                Console.WriteLine("Enter X to confirm exit");
-                                break;
-                            }
+                    Console.WriteLine("Press Enter to cancel ProduceItems (X).................");
+                    if (Console.KeyAvailable)
+                    {
+                        var key = Console.ReadKey();
+                        switch (key.KeyChar)
+                        {
+                            case 'a': // Addr off
+                                {
+                                    traceTryAddAddr = false;
+                                    traceTryTakeAddr = false;
+                                    break;
+                                }
+                            case 'A': // Addr on
+                                {
+                                    traceTryAddAddr = true;
+                                    traceTryTakeAddr = true;
+                                    break;
+                                }
+                            case 'b': // Blocks off
+                                {
+                                    traceTryAddBlock = false;
+                                    traceTryTakeBlock = false;
+                                    break;
+                                }
+                            case 'B': // Blocks on
+                                {
+                                    traceTryAddBlock = true;
+                                    traceTryTakeBlock = true;
+                                    break;
+                                }
+                            case 'd': // Blocked messages off
+                                {
+                                    traceBlockedMsgs = false;
+                                    break;
+                                }
+                            case 'D': // Blocked messages on
+                                {
+                                    traceBlockedMsgs = true;
+                                    break;
+                                }
+                            case 'p': // Pulse off
+                                {
+                                    traceTryAddBlock = false;
+                                    traceTryTakeBlock = false;
+                                    break;
+                                }
+                            case 'P': // Pulse on
+                                {
+                                    traceTryAddBlock = true;
+                                    traceTryTakeBlock = true;
+                                    break;
+                                }
+                            case 't': // Tx off
+                                {
+                                    traceTryAddTx = false;
+                                    traceTryTakeTx = false;
+                                    break;
+                                }
+                            case 'T': // Tx on
+                                {
+                                    traceTryAddTx = true;
+                                    traceTryTakeTx = true;
+                                    break;
+                                }
+                            case 'X': // Exit
+                                {
+                                    Console.WriteLine("Canceling ProduceItems...");
+                                    ctsProduceItems.Cancel();
+                                    Console.WriteLine("ProduceItems notified...");
+                                    break;
+                                }
+                            case 'W': // Wait
+                                {
+                                    PauseAllTasks = 4;
+                                    Console.WriteLine("Waiting...");
+                                    Thread.Sleep((int)(ONE_MINUTE));
+                                    PauseAllTasks = 0;
+                                    break;
+                                }
+                            default:
+                                {
+                                    Console.WriteLine();
+                                    Console.WriteLine("Enter X to confirm exit");
+                                    break;
+                                }
+                        }
                     }
+                    Thread.Sleep(10000);
                 }
-                Thread.Sleep(10000);
+                Console.WriteLine("Waiting for ProduceItems to exit...");
+                produceItems.Wait();
+                Console.WriteLine("ProduceItems exited");
+
+                ctsConsumeBlocks.Cancel();
+                ctsConsumeTxs.Cancel();
+                ctsConsumeAddrs.Cancel();
+
+                Console.WriteLine("Waiting for ConsumeBlocks to exit...");
+                consumeBlocks.Wait();
+                Console.WriteLine("Waiting for ConsumeTxs to exit...");
+                consumeTxs.Wait();
+                Console.WriteLine("Waiting for ConsumeAddrs to exit...");
+                consumeAddrs.Wait();
+                Console.WriteLine("Consumers exited");
+
+                ctsProduceItems.Dispose();
+                ctsConsumeBlocks.Dispose();
+                ctsConsumeTxs.Dispose();
+                ctsConsumeAddrs.Dispose();
+
+                DateTime dtEnd = DateTime.Now;
+                Console.WriteLine("Start:\t" + dtStart.ToString());
+                Console.WriteLine("End:\t" + dtEnd.ToString());
+                TimeSpan ts = dtEnd - dtStart;
+                double tsMinutes = ts.TotalMinutes;
+                Console.WriteLine("Elapsed:\t" + tsMinutes.ToString() + " minutes");
             }
-            Console.WriteLine("Waiting for ProduceItems to exit...");
-            produceItems.Wait();
-            Console.WriteLine("ProduceItems exited");
-
-            ctsConsumeBlocks.Cancel();
-            ctsConsumeTxs.Cancel();
-            ctsConsumeAddrs.Cancel();
-
-            Console.WriteLine("Waiting for ConsumeBlocks to exit...");
-            consumeBlocks.Wait();
-            Console.WriteLine("Waiting for ConsumeTxs to exit...");
-            consumeTxs.Wait();
-            Console.WriteLine("Waiting for ConsumeAddrs to exit...");
-            consumeAddrs.Wait();
-            Console.WriteLine("Consumers exited");
-
-            ctsProduceItems.Dispose();
-            ctsConsumeBlocks.Dispose();
-            ctsConsumeTxs.Dispose();
-            ctsConsumeAddrs.Dispose();
-
-            DateTime dtEnd = DateTime.Now;
-            Console.WriteLine("Start:\t" + dtStart.ToString());
-            Console.WriteLine("End:\t" + dtEnd.ToString());
-            TimeSpan ts = dtEnd - dtStart;
-            double tsMinutes = ts.TotalMinutes;
-            Console.WriteLine("Elapsed:\t" + tsMinutes.ToString() + " minutes");
-
+            catch(Exception ex)
+            {
+                Console.WriteLine("Exception: " + ex.ToString());
+                if (ex.InnerException != null) Console.WriteLine("Exception: " + ex.InnerException.ToString());
+            }
             Console.WriteLine("Press Enter to exit...");
             Console.ReadLine();
         }

@@ -1,2 +1,0 @@
-geth.exe attach
-pause
