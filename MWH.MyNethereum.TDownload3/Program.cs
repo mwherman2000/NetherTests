@@ -39,6 +39,9 @@ namespace MWH.MyNethereum.TDownload
         static bool addTx = true;
         static bool addAddr = true;
 
+        static ulong nProducedBlockItems = 0;
+        static ulong nProducedTxItems = 0;
+        static ulong nProducedAddrItems = 0;
         static ulong nConsumedBlockItems = 0;
         static ulong nConsumedTxItems = 0;
         static ulong nConsumedAddrItems = 0;
@@ -78,6 +81,9 @@ namespace MWH.MyNethereum.TDownload
                 while (!produceItems.IsCompleted) // Monitoring loop
                 {
                     Console.WriteLine("-------------------------------------------------------");
+                    Console.WriteLine("nProducedBlockItems:\t" + nProducedBlockItems.ToString());
+                    Console.WriteLine("nProducedTxItems:   \t" + nProducedTxItems.ToString());
+                    Console.WriteLine("nProducedAddrItems: \t" + nProducedAddrItems.ToString());
                     Console.WriteLine("nConsumedBlockItems:\t" + nConsumedBlockItems.ToString());
                     Console.WriteLine("nConsumedTxItems:   \t" + nConsumedTxItems.ToString());
                     Console.WriteLine("nConsumedAddrItems: \t" + nConsumedAddrItems.ToString());
@@ -251,6 +257,12 @@ namespace MWH.MyNethereum.TDownload
                     Thread.Sleep(ONE_MINUTE);
                 }
 
+                while (bcAddr.Count > bcAddr.BoundedCapacity * 0.5 || bcTx.Count > bcTx.BoundedCapacity * 0.5)
+                {
+                    if (traceBlockedMsgs) Console.WriteLine("ProduceAllItems.Blocks:\tWaiting for Addr/Tx...");
+                    Thread.Sleep(500);
+                }
+
                 var taskGetBlockWithTx = GetBlockWithTx(web3, blockNumber);
                 taskGetBlockWithTx.Wait();
                 var block = taskGetBlockWithTx.Result;
@@ -282,6 +294,7 @@ namespace MWH.MyNethereum.TDownload
                 {
                     if (bcBlock.TryAdd(itemBlock))
                     {
+                        nProducedBlockItems++;
                         if (!addBlock)
                         {
                             BlockItem itemBlockDummy = new BlockItem();
@@ -328,6 +341,7 @@ namespace MWH.MyNethereum.TDownload
 
                             if (bcTx.TryAdd(itemTx))
                             {
+                                nProducedTxItems++;
                                 if (!addTx)
                                 {
                                     TxItem itemTxDummy = new TxItem();
@@ -374,6 +388,7 @@ namespace MWH.MyNethereum.TDownload
                                         if (traceBlockedMsgs) Console.WriteLine("TryAdd.Addr.From:\t" + " Blocked\t1 sec.");
                                         Thread.Sleep(1000);
                                     }
+                                    nProducedAddrItems++;
                                     if (!addAddr)
                                     {
                                         AddrItem itemAddrDummy = new AddrItem();
@@ -418,6 +433,7 @@ namespace MWH.MyNethereum.TDownload
                                         if (traceBlockedMsgs) Console.WriteLine("TryAdd.Addr.To:\t" + " Blocked\t1 sec.");
                                         Thread.Sleep(1000);
                                     }
+                                    nProducedAddrItems++;
                                     if (!addAddr)
                                     {
                                         AddrItem itemAddrDummy = new AddrItem();
@@ -589,21 +605,20 @@ namespace MWH.MyNethereum.TDownload
                     if (bcAddr.TryTake(out itemAddr))
                     {
                         AddressType addrType;
-                        try
+                        if (contractAddrs.Keys.Contains(itemAddr.Address))
                         {
                             addrType = contractAddrs[itemAddr.Address];
                             if (addrType == AddressType.Unknown) throw new ArgumentOutOfRangeException(); // force GetAddressType
                             itemAddr.AddrType = addrType;
                         }
-                        catch(Exception ex)
+                        else
                         {
                             var tAddrType = GetAddressType(web3, itemAddr.Address);
                             tAddrType.Wait();
                             addrType = tAddrType.Result;
-
                             itemAddr.AddrType = addrType;
-
                             contractAddrs.Add(itemAddr.Address, itemAddr.AddrType);
+                            if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.contractAddrs:\t" + itemAddr.Address);
                         }
 
                         if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.Addr:\t" + itemAddr.Address);
