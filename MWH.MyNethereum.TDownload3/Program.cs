@@ -120,7 +120,7 @@ namespace MWH.MyNethereum.TDownload
                         fConsumedItemsMinutesPrev2 = fConsumedItemsMinutesPrev1;
                         fConsumedItemsMinutesPrev1 = fConsumedItemsMinutesCurrent;
 
-                        nConsumedBlockItemsPrev4 = nConsumedBlockItemsPrev2;
+                        nConsumedBlockItemsPrev4 = nConsumedBlockItemsPrev3;
                         nConsumedBlockItemsPrev3 = nConsumedBlockItemsPrev2;
                         nConsumedBlockItemsPrev2 = nConsumedBlockItemsPrev1;
                         nConsumedBlockItemsPrev1 = nConsumedBlockItems;
@@ -157,7 +157,7 @@ namespace MWH.MyNethereum.TDownload
                         }
                     }
 
-                    Console.WriteLine("Press 'X' to cancel ProduceItems.....................");
+                    Console.WriteLine("Press 'X' to cancel ProduceItems.......................");
                     if (Console.KeyAvailable)
                     {
                         var key = Console.ReadKey();
@@ -287,11 +287,6 @@ namespace MWH.MyNethereum.TDownload
         {
             SHA256 SHA256Gen = SHA256Managed.Create();
 
-            //Web3 web3 = new Web3();
-            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
-            Web3 web3 = new Web3(ipcClient);
-
             for (ulong blockNumber = startBlockNumber; blockNumber <= endBlockNumber; blockNumber++ ) // BLOCKS
             {
                 if (PauseAllTasks > 0)
@@ -307,7 +302,7 @@ namespace MWH.MyNethereum.TDownload
                     Thread.Sleep(50);
                 }
 
-                var taskGetBlockWithTx = GetBlockWithTx(web3, blockNumber);
+                var taskGetBlockWithTx = GetBlockWithTx(blockNumber);
                 taskGetBlockWithTx.Wait();
                 var block = taskGetBlockWithTx.Result;
 
@@ -517,11 +512,6 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeBlocks(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            //Web3 web3 = new Web3();
-            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
-            Web3 web3 = new Web3(ipcClient);
-
             BlockItem itemBlock;
             int nTimesBlocked = 0;
 
@@ -577,11 +567,6 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeTxs(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            //Web3 web3 = new Web3();
-            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
-            Web3 web3 = new Web3(ipcClient);
-
             TxItem itemTx;
             int nTimesBlocked = 0;
 
@@ -642,11 +627,6 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeAddr(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            //Web3 web3 = new Web3();
-            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
-            Web3 web3 = new Web3(ipcClient);
-
             AddrItem itemAddr;
             int nTimesBlocked = 0;
 
@@ -677,7 +657,7 @@ namespace MWH.MyNethereum.TDownload
                             {
                                 try
                                 {
-                                    tAddrType = GetAddressType(web3, itemAddr.Address);
+                                    tAddrType = GetAddressType(itemAddr.Address);
                                     success = tAddrType.Wait(1000);
                                     if (success)
                                     {
@@ -755,17 +735,29 @@ namespace MWH.MyNethereum.TDownload
             return new string(hex);
         }
 
-        static async Task<BlockWithTransactions> GetBlockWithTx(Web3 web3, ulong blockNumber)
+        static Web3 web3ConsumeAddr = GetWeb3Client();
+        static Web3 web3ConsumeBlocks = GetWeb3Client();
+
+        static Web3 GetWeb3Client()
+        {
+            //Web3 web3 = new Web3();
+            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
+            Web3 web3 = new Web3(ipcClient);
+            return web3;
+        }
+
+        static async Task<BlockWithTransactions> GetBlockWithTx(ulong blockNumber)
         {
             var blockNumberParameter = new Nethereum.RPC.Eth.DTOs.BlockParameter(blockNumber);
-            var block = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(blockNumberParameter);
+            var block = await web3ConsumeBlocks.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(blockNumberParameter);
             return block;
         }
 
-        static async Task<AddressType> GetAddressType(Web3 web3, string addr)
+        static async Task<AddressType> GetAddressType(string addr)
         {
             AddressType addrType = AddressType.Unknown;
-            var code = await web3.Eth.GetCode.SendRequestAsync(addr);
+            var code = await web3ConsumeAddr.Eth.GetCode.SendRequestAsync(addr);
             if (code == null || code == "0x")
             {
                 addrType = AddressType.Account;
