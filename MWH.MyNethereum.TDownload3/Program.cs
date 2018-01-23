@@ -287,8 +287,10 @@ namespace MWH.MyNethereum.TDownload
         {
             SHA256 SHA256Gen = SHA256Managed.Create();
 
-            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
+            Web3 web3 = new Web3(ipcClient);
 
             for (ulong blockNumber = startBlockNumber; blockNumber <= endBlockNumber; blockNumber++ ) // BLOCKS
             {
@@ -515,8 +517,10 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeBlocks(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
+            Web3 web3 = new Web3(ipcClient);
 
             BlockItem itemBlock;
             int nTimesBlocked = 0;
@@ -573,8 +577,10 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeTxs(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
+            Web3 web3 = new Web3(ipcClient);
 
             TxItem itemTx;
             int nTimesBlocked = 0;
@@ -636,8 +642,10 @@ namespace MWH.MyNethereum.TDownload
 
         static void ConsumeAddr(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
-            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3();
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+            var ipcClient = new Nethereum.JsonRpc.IpcClient.IpcClient("./geth.ipc");
+            Web3 web3 = new Web3(ipcClient);
 
             AddrItem itemAddr;
             int nTimesBlocked = 0;

@@ -18,13 +18,13 @@ namespace IPCEndPointTest1
             //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
 
             ulong startBlockNumber = 0;
-            ulong endBlockNumber = 1000000;
+            ulong endBlockNumber = 100 * 1000;
 
             DateTime dtStart = DateTime.Now;
             for (ulong blockNumber = startBlockNumber; blockNumber <= endBlockNumber; blockNumber++) // BLOCKS
             {
                 var taskGetBlockWithTx = GetBlockWithTx(web3, blockNumber);
-                taskGetBlockWithTx.Wait();
+                taskGetBlockWithTx.Wait(1000);
                 var block = taskGetBlockWithTx.Result;
                 if (blockNumber % 1000 == 0) Console.Write(".");
             }
@@ -32,10 +32,10 @@ namespace IPCEndPointTest1
             DateTime dtEnd = DateTime.Now;
             TimeSpan tsElapsed = dtEnd - dtStart;
             double fElapsedMinutes = tsElapsed.TotalMinutes;
-            Console.WriteLine("fElapsedMinutes:t" + fElapsedMinutes.ToString());
+            Console.WriteLine("fElapsedMinutes:\t" + fElapsedMinutes.ToString());
 
             Console.WriteLine("Press Enter to exit...");
-            Console.WriteLine();
+            Console.ReadLine();
         }
 
         static async Task<BlockWithTransactions> GetBlockWithTx(Web3 web3, ulong blockNumber)
