@@ -18,8 +18,8 @@ namespace MWH.MyNethereum.TDownload
         const int ONE_MINUTE = 60 * 1000;
         static int PauseAllTasks = 0;
 
-        static ulong startBlockNumber = 3 * 1000000 + 1;
-        static ulong endBlockNumber   = 4 * 1000000;
+        static ulong startBlockNumber = 4 * 1000000 + 1;
+        static ulong endBlockNumber =   4950000; // 5 * 1000000;
 
         static double projectedMinutesPrev1 = 0;
         static double projectedMinutesPrev2 = 0;
@@ -39,6 +39,16 @@ namespace MWH.MyNethereum.TDownload
         static bool addTx = true;
         static bool addAddr = true;
 
+        static double fConsumedItemsMinutesPrev4 = 0.0;
+        static double fConsumedItemsMinutesPrev3 = 0.0;
+        static double fConsumedItemsMinutesPrev2 = 0.0;
+        static double fConsumedItemsMinutesPrev1 = 0.0;
+
+        static ulong nConsumedBlockItemsPrev4 = 0;
+        static ulong nConsumedBlockItemsPrev3 = 0;
+        static ulong nConsumedBlockItemsPrev2 = 0;
+        static ulong nConsumedBlockItemsPrev1 = 0;
+
         static ulong nProducedBlockItems = 0;
         static ulong nProducedTxItems = 0;
         static ulong nProducedAddrItems = 0;
@@ -56,9 +66,6 @@ namespace MWH.MyNethereum.TDownload
         {
             try
             {
-                Web3 web3 = new Web3();
-                //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
-
                 DateTime dtStart = DateTime.Now;
                 Console.WriteLine("Starting ProduceItems and Consumers...");
 
@@ -72,10 +79,10 @@ namespace MWH.MyNethereum.TDownload
                 CancellationToken ctConsumeTxs = ctsConsumeTxs.Token;
                 CancellationToken ctConsumeAddrs = ctsConsumeAddrs.Token;
 
-                Task produceItems = Task.Run(() => ProduceItems(web3, startBlockNumber, endBlockNumber, ctProduceItems), ctProduceItems);
-                Task consumeBlocks = Task.Run(() => ConsumeBlocks(web3, startBlockNumber, endBlockNumber, ctConsumeBlocks), ctConsumeBlocks);
-                Task consumeTxs = Task.Run(() => ConsumeTxs(web3, startBlockNumber, endBlockNumber, ctConsumeTxs), ctConsumeTxs);
-                Task consumeAddrs = Task.Run(() => ConsumeAddr(web3, startBlockNumber, endBlockNumber, ctConsumeAddrs), ctConsumeAddrs);
+                Task produceItems = Task.Run(() => ProduceItems(startBlockNumber, endBlockNumber, ctProduceItems), ctProduceItems);
+                Task consumeBlocks = Task.Run(() => ConsumeBlocks(startBlockNumber, endBlockNumber, ctConsumeBlocks), ctConsumeBlocks);
+                Task consumeTxs = Task.Run(() => ConsumeTxs(startBlockNumber, endBlockNumber, ctConsumeTxs), ctConsumeTxs);
+                Task consumeAddrs = Task.Run(() => ConsumeAddr(startBlockNumber, endBlockNumber, ctConsumeAddrs), ctConsumeAddrs);
 
                 Console.WriteLine("Waiting for ProduceItems and Consumers...");
                 while (!produceItems.IsCompleted) // Monitoring loop
@@ -88,37 +95,69 @@ namespace MWH.MyNethereum.TDownload
                     Console.WriteLine("nConsumedTxItems:   \t" + nConsumedTxItems.ToString());
                     Console.WriteLine("nConsumedAddrItems: \t" + nConsumedAddrItems.ToString());
                     Console.WriteLine("-------------------------------------------------------");
-                    Console.WriteLine("bcBlock.Count:\t" + bcBlock.Count.ToString());
-                    Console.WriteLine("bcTx.Count:   \t" + bcTx.Count.ToString());
-                    Console.WriteLine("bcAddr.Count: \t" + bcAddr.Count.ToString());
+                    Console.WriteLine("bcBlock.Count:      \t" + bcBlock.Count.ToString());
+                    Console.WriteLine("bcTx.Count:         \t" + bcTx.Count.ToString());
+                    Console.WriteLine("bcAddr.Count:       \t" + bcAddr.Count.ToString());
                     Console.WriteLine("contractAddrs.Count:\t" + contractAddrs.Count.ToString());
                     Console.WriteLine("-------------------------------------------------------");
-                    DateTime dtInterim = DateTime.Now;
-                    Console.WriteLine("Start:  \t" + dtStart.ToString());
-                    Console.WriteLine("Interim:\t" + dtInterim.ToString());
-                    TimeSpan tsConsumedItems = dtInterim - dtStart;
-                    double tsConsumedItemsMinutes = tsConsumedItems.TotalMinutes;
-                    Console.WriteLine("Elapsed:\t" + ((ulong)tsConsumedItemsMinutes).ToString() + " minutes");
-                    if (tsConsumedItemsMinutes >= 1.0 && nConsumedBlockItems >= 1)
+                    Console.WriteLine("produceItems.IsCompleted: \t" + produceItems.IsCompleted.ToString());
+                    Console.WriteLine("consumeBlocks.IsCompleted:\t" + consumeBlocks.IsCompleted.ToString());
+                    Console.WriteLine("consumeTxs.IsCompleted:   \t" + consumeTxs.IsCompleted.ToString());
+                    Console.WriteLine("consumeAddrs.IsCompleted: \t" + consumeAddrs.IsCompleted.ToString());
+                    Console.WriteLine("-------------------------------------------------------");
+                    DateTime dtCurrent = DateTime.Now;
+                    Console.WriteLine("Start:    \t" + dtStart.ToString());
+                    Console.WriteLine("Current:  \t" + dtCurrent.ToString());
+                    TimeSpan tsConsumedItemsCurrent = dtCurrent - dtStart;
+                    double fConsumedItemsMinutesCurrent = tsConsumedItemsCurrent.TotalMinutes;
+                    Console.WriteLine("Elapsed:  \t" + ((ulong)fConsumedItemsMinutesCurrent).ToString() + " minutes");
+                    if (fConsumedItemsMinutesCurrent >= 1.0 && nConsumedBlockItems >= 1)
                     {
-                        double nConsumedItemsPerMinute = nConsumedBlockItems / tsConsumedItemsMinutes;
-                        Console.WriteLine("Rate:    \t" + ((int)nConsumedItemsPerMinute).ToString() + " per minute");
                         ulong nBlocksRemaining = (endBlockNumber - startBlockNumber + 1) - nConsumedBlockItems;
-                        double projectedMinutesCurrent = (double)nBlocksRemaining / nConsumedItemsPerMinute;
+
+                        fConsumedItemsMinutesPrev4 = fConsumedItemsMinutesPrev3;
+                        fConsumedItemsMinutesPrev3 = fConsumedItemsMinutesPrev2;
+                        fConsumedItemsMinutesPrev2 = fConsumedItemsMinutesPrev1;
+                        fConsumedItemsMinutesPrev1 = fConsumedItemsMinutesCurrent;
+
+                        nConsumedBlockItemsPrev4 = nConsumedBlockItemsPrev2;
+                        nConsumedBlockItemsPrev3 = nConsumedBlockItemsPrev2;
+                        nConsumedBlockItemsPrev2 = nConsumedBlockItemsPrev1;
+                        nConsumedBlockItemsPrev1 = nConsumedBlockItems;
+ 
+                        if (fConsumedItemsMinutesPrev4 >= 1.0 && nConsumedBlockItemsPrev4 >= 1)
+                        {
+                            double fConsumedItemsMinutesDelta = fConsumedItemsMinutesPrev1 - fConsumedItemsMinutesPrev4;
+                            ulong nConsumedBlockItemsDelta =   nConsumedBlockItemsPrev1   - nConsumedBlockItemsPrev4;
+
+                            double rateConsumedItemsPerMinuteDelta = nConsumedBlockItemsDelta / fConsumedItemsMinutesDelta;
+                            Console.WriteLine("Rate (now):\t" + ((int)rateConsumedItemsPerMinuteDelta).ToString() + " blocks per minute");
+                            if (rateConsumedItemsPerMinuteDelta >= 1.0 && nBlocksRemaining >= 1)
+                            {
+                                double projectedMinutesDelta = (double)nBlocksRemaining / rateConsumedItemsPerMinuteDelta;
+                                DateTime dtProjectedDelta = dtCurrent.AddMinutes(projectedMinutesDelta);
+                                Console.WriteLine("Projected:  \t" + ((ulong)projectedMinutesDelta).ToString() + " minutes");
+                                Console.WriteLine("Projected:  \t" + dtProjectedDelta.ToString());
+                            }
+                        }
+
+                        double rateConsumedItemsPerMinute = nConsumedBlockItems / fConsumedItemsMinutesCurrent;
+                        Console.WriteLine("Rate:      \t" + ((int)rateConsumedItemsPerMinute).ToString() + " blocks per minute");
+                        double projectedMinutesCurrent = (double)nBlocksRemaining / rateConsumedItemsPerMinute;
                         projectedMinutesPrev3 = projectedMinutesPrev2;
                         projectedMinutesPrev2 = projectedMinutesPrev1;
                         projectedMinutesPrev1 = projectedMinutesCurrent;
                         if (projectedMinutesPrev3 > 0)
                         {
                             double projectedMinutesAverage = (projectedMinutesPrev3 + projectedMinutesPrev2 + projectedMinutesPrev1) / 3.0;
-                            DateTime dtProjected = dtStart.AddMinutes(projectedMinutesAverage);
-                            Console.WriteLine("Projected:\t" + ((ulong)projectedMinutesCurrent).ToString() + " minutes"
-                                + " (" + (int)(100.0 * tsConsumedItemsMinutes / (tsConsumedItemsMinutes + projectedMinutesCurrent)) + "%)");
-                            Console.WriteLine("Projected:\t" + dtProjected.ToString());
+                            DateTime dtProjected = dtCurrent.AddMinutes(projectedMinutesAverage);
+                            Console.WriteLine("Projected:  \t" + ((ulong)projectedMinutesCurrent).ToString() + " minutes"
+                                + " (" + (int)(100.0 * fConsumedItemsMinutesCurrent / (fConsumedItemsMinutesCurrent + projectedMinutesCurrent)) + "%)");
+                            Console.WriteLine("Projected:  \t" + dtProjected.ToString());
                         }
                     }
 
-                    Console.WriteLine("Press Enter to cancel ProduceItems (X).................");
+                    Console.WriteLine("Press 'X' to cancel ProduceItems.....................");
                     if (Console.KeyAvailable)
                     {
                         var key = Console.ReadKey();
@@ -244,9 +283,12 @@ namespace MWH.MyNethereum.TDownload
             Console.ReadLine();
         }
 
-        static void ProduceItems(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ProduceItems(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
             SHA256 SHA256Gen = SHA256Managed.Create();
+
+            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
 
             for (ulong blockNumber = startBlockNumber; blockNumber <= endBlockNumber; blockNumber++ ) // BLOCKS
             {
@@ -260,7 +302,7 @@ namespace MWH.MyNethereum.TDownload
                 while (bcAddr.Count > bcAddr.BoundedCapacity * 0.5 || bcTx.Count > bcTx.BoundedCapacity * 0.5)
                 {
                     if (traceBlockedMsgs) Console.WriteLine("ProduceAllItems.Blocks:\tWaiting for Addr/Tx...");
-                    Thread.Sleep(500);
+                    Thread.Sleep(50);
                 }
 
                 var taskGetBlockWithTx = GetBlockWithTx(web3, blockNumber);
@@ -471,8 +513,11 @@ namespace MWH.MyNethereum.TDownload
 
         const string FILENAME_BLOCKS = @"c:\temp\a-blocks-{0}-{1}.csv";
 
-        static void ConsumeBlocks(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeBlocks(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
+            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+
             BlockItem itemBlock;
             int nTimesBlocked = 0;
 
@@ -526,8 +571,11 @@ namespace MWH.MyNethereum.TDownload
 
         const string FILENAME_TX = @"c:\temp\a-tx-{0}-{1}.csv";
 
-        static void ConsumeTxs(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeTxs(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
+            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+
             TxItem itemTx;
             int nTimesBlocked = 0;
 
@@ -586,8 +634,11 @@ namespace MWH.MyNethereum.TDownload
 
         const string FILENAME_ADDR = @"c:\temp\a-addr-{0}-{1}.csv";
 
-        static void ConsumeAddr(Web3 web3, ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
+        static void ConsumeAddr(ulong startBlockNumber, ulong endBlockNumber, CancellationToken ct)
         {
+            Web3 web3 = new Web3();
+            //Web3 web3 = new Web3("https://mainnet.infura.io/hZeiirtHOLO11uuyLySi");
+
             AddrItem itemAddr;
             int nTimesBlocked = 0;
 
@@ -602,23 +653,47 @@ namespace MWH.MyNethereum.TDownload
                         Thread.Sleep(ONE_MINUTE);
                     }
 
+                    AddressType addrType = AddressType.Unknown;
                     if (bcAddr.TryTake(out itemAddr))
                     {
-                        AddressType addrType;
                         if (contractAddrs.Keys.Contains(itemAddr.Address))
                         {
                             addrType = contractAddrs[itemAddr.Address];
-                            if (addrType == AddressType.Unknown) throw new ArgumentOutOfRangeException(); // force GetAddressType
-                            itemAddr.AddrType = addrType;
                         }
                         else
                         {
-                            var tAddrType = GetAddressType(web3, itemAddr.Address);
-                            tAddrType.Wait();
-                            addrType = tAddrType.Result;
+                            Task<AddressType> tAddrType = null;
+                            bool success = false;
+                            int nAttempts = 0;
+                            while (!success)
+                            {
+                                try
+                                {
+                                    tAddrType = GetAddressType(web3, itemAddr.Address);
+                                    success = tAddrType.Wait(1000);
+                                    if (success)
+                                    {
+                                        addrType = tAddrType.Result;
+                                    }
+                                    else
+                                    {
+                                        nAttempts++;
+                                        if (nAttempts >= 5)
+                                        {
+                                            throw new TimeoutException();
+                                        }
+                                    }
+                                }
+                                catch(Exception ex)
+                                {
+                                    Console.WriteLine("                                        TryTake.contractAddrs:\tretry " + itemAddr.Address);
+                                    success = false;
+                                    Thread.Sleep(100);
+                                }
+                            }
+                            contractAddrs.Add(itemAddr.Address, addrType);
                             itemAddr.AddrType = addrType;
-                            contractAddrs.Add(itemAddr.Address, itemAddr.AddrType);
-                            if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.contractAddrs:\t" + itemAddr.Address);
+                            if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.contractAddrs:\t" + itemAddr.Address + " " + itemAddr.AddrType.ToString());
                         }
 
                         if (traceTryTakeAddr) Console.WriteLine("                                        TryTake.Addr:\t" + itemAddr.Address);
