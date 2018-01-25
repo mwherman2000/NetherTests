@@ -36,6 +36,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HashSets", "HashSets\HashSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPCEndPointTest1", "IPCEndPointTest1\IPCEndPointTest1.csproj", "{5FE2AA65-AF4C-4ED7-9354-166DC3F3771B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateAccountTest1", "CreateAccountTest1\CreateAccountTest1.csproj", "{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -214,6 +216,18 @@ Global
 		{5FE2AA65-AF4C-4ED7-9354-166DC3F3771B}.Release|x64.Build.0 = Release|Any CPU
 		{5FE2AA65-AF4C-4ED7-9354-166DC3F3771B}.Release|x86.ActiveCfg = Release|Any CPU
 		{5FE2AA65-AF4C-4ED7-9354-166DC3F3771B}.Release|x86.Build.0 = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|x64.Build.0 = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Debug|x86.Build.0 = Debug|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|x64.ActiveCfg = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|x64.Build.0 = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|x86.ActiveCfg = Release|Any CPU
+		{C4F8FCE0-E14B-4C0C-BB2C-D98EF2E11764}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
