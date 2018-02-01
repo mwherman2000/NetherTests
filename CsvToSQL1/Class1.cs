@@ -9,21 +9,20 @@ namespace CsvToSQL1
 {
     public class CsvBulkCopyDataIntoSqlServer
     {
-        int _tableNumber = 2;
+        bool _truncate = false;
+        int  _tableNumber = 2;
+        string _databaseName = "a-test3"; // "a-test4D"; // "a-test3";
 
-        string _serverName = @"DESKTOP-ETTAF0H\MSSQLSERVER";
-        string _databaseName = "a-test3";
+        string _serverName = @"DESKTOP-ETTAF0H";
+        string _path = @"C:\Temp\1999994-2000000\"; // @"C:\Temp\a-test1";
         string[] _tableNames = { "Aaddr", "Ablocks", "Atx" };
 
         const int _batchSize = 100000;
 
         Dictionary<string, System.Type> _fieldTypes = new Dictionary<string, System.Type>();
 
-        public CsvBulkCopyDataIntoSqlServer(string serverName, string databaseName)
+        public CsvBulkCopyDataIntoSqlServer()
         {
-            _serverName = serverName;
-            _databaseName = databaseName;
-
             _fieldTypes.Add("Address", typeof(System.String));
             _fieldTypes.Add("From", typeof(System.String));
             _fieldTypes.Add("To", typeof(System.String));
@@ -50,7 +49,7 @@ namespace CsvToSQL1
         public void LoadCsvDataIntoSqlServer()
         {
             // This should be the full path
-            var fileName = @"C:\temp\a-test1\" + _tableNames[_tableNumber] + ".csv";
+            var fileName = _path + _tableNames[_tableNumber] + ".csv";
 
             using (var textFieldParser = new TextFieldParser(fileName))
             {
@@ -126,26 +125,40 @@ namespace CsvToSQL1
 
                 var connectionString = string.Format(@"Data Source={0};Initial Catalog={1};Integrated Security=True;MultipleActiveResultSets=True",
     _serverName, _databaseName);
+                Console.WriteLine("Connection String: " + connectionString);
                 using (var sqlConnection = new SqlConnection(connectionString))
                 {
                     sqlConnection.Open();
 
                     // Truncate the live table
-                    using (var sqlCommand = new SqlCommand(String.Format(@"TRUNCATE TABLE [{0}]", _tableNames[_tableNumber]), sqlConnection))
+                    string sqlTruncate = String.Format(@"TRUNCATE TABLE [{0}]", _tableNames[_tableNumber]);
+                    Console.WriteLine("Command: " + sqlTruncate);
+                    if (_truncate)
                     {
-                        sqlCommand.ExecuteNonQuery();
+                        using (var sqlCommand = new SqlCommand(sqlTruncate, sqlConnection))
+                        {
+                            sqlCommand.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Skipping: " + sqlTruncate);
                     }
 
                     // SELECT against the empty table to get the extract schema needed for the bulk load
-                    SqlCommand cmdSQLLoader = new SqlCommand(String.Format("SELECT * FROM [{0}]", _tableNames[_tableNumber]), sqlConnection);
+                    string sqlSelectStar = String.Format("SELECT TOP 1 * FROM [{0}].[dbo].[{1}]", _databaseName, _tableNames[_tableNumber]);
+                    SqlCommand cmdSQLLoader = new SqlCommand(sqlSelectStar, sqlConnection);
+                    Console.WriteLine("Command: " + sqlSelectStar);
                     SqlDataAdapter daSQLLoader = new SqlDataAdapter(cmdSQLLoader);
-                    daSQLLoader.Fill(dtSQLLoader);
+                    int rows = daSQLLoader.Fill(dtSQLLoader);
                     dtSQLLoader.TableName = _tableNames[_tableNumber];
+                    if (rows > 0) dtSQLLoader.Rows.Clear();
 
                     // Create the bulk copy object
                     var sqlBulkCopy = new SqlBulkCopy(sqlConnection)
                     {
-                        DestinationTableName = dtSQLLoader.TableName
+                        DestinationTableName = dtSQLLoader.TableName,
+                        BulkCopyTimeout = 120 // seconds
                     };
 
                     // Setup the column mappings, anything ommitted is skipped
@@ -202,6 +215,7 @@ namespace CsvToSQL1
                             Console.Write("." + ((int)(createdCount / _batchSize)).ToString());
                             //break; // DEBUG
                         }
+                        //break; // HEADER ROW
                     }
 
                     // Don't forget to send the last batch under 100,000

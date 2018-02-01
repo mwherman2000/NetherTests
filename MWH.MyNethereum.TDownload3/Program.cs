@@ -18,8 +18,8 @@ namespace MWH.MyNethereum.TDownload
         const int ONE_MINUTE = 60 * 1000;
         static int PauseAllTasks = 0;
 
-        static ulong startBlockNumber = 4 * 1000000 + 1;
-        static ulong endBlockNumber =   4950000; // 5 * 1000000;
+        static ulong startBlockNumber = 1999994; // 4 * 1000000 + 1;
+        static ulong endBlockNumber =   2000000; // 5 * 1000000;
 
         static double projectedMinutesPrev1 = 0;
         static double projectedMinutesPrev2 = 0;
