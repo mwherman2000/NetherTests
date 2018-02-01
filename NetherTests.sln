@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateAccountTest1", "Creat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsvToSQL1", "CsvToSQL1\CsvToSQL1.csproj", "{EB510339-90C5-45B4-B2D7-4BC464A72CB1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EtherToSQL1", "EtherToSQL1\EtherToSQL1.csproj", "{1C9398E6-C68C-4867-822F-D739F2A2827B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -242,6 +244,18 @@ Global
 		{EB510339-90C5-45B4-B2D7-4BC464A72CB1}.Release|x64.Build.0 = Release|Any CPU
 		{EB510339-90C5-45B4-B2D7-4BC464A72CB1}.Release|x86.ActiveCfg = Release|Any CPU
 		{EB510339-90C5-45B4-B2D7-4BC464A72CB1}.Release|x86.Build.0 = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|x64.Build.0 = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1C9398E6-C68C-4867-822F-D739F2A2827B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
